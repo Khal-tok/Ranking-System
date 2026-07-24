@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Leaderboard & War System</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; min-height: 100vh; }
+  .main-wrapper { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; max-width: 1550px; width: 100%; align-items: start; }
+  @media (max-width: 1100px) { .main-wrapper { grid-template-columns: 1fr; } }
+  
+  .panel { background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #334155; }
+  h1 { color: #38bdf8; font-size: 1.8rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; }
+  
+  .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #334155; padding-bottom: 10px; }
+  .tab { padding: 10px 20px; background: transparent; color: #94a3b8; border: none; cursor: pointer; font-size: 1rem; font-weight: bold; border-radius: 6px; transition: 0.3s; }
+  .tab:hover { color: #f8fafc; }
+  .tab.active { background: #38bdf8; color: #0b1120; }
+  
+  .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  input, select { padding: 10px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: white; font-size: 0.95rem; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: #38bdf8; }
+  .search-box { flex: 1; min-width: 150px; }
+  
+  button.primary-btn { padding: 10px 20px; background: #38bdf8; color: #0b1120; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+  button.primary-btn:hover { background: #0ea5e9; }
+  button.danger-btn { padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+  button.danger-btn:hover { background: #dc2626; }
+  button.secondary-btn { padding: 10px 20px; background: transparent; border: 1px solid #475569; color: #94a3b8; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+  button.secondary-btn:hover { background: #334155; color: white; }
+
+  .crud-form { display: flex; gap: 10px; flex: 2; min-width: 250px; }
+  
+  .table-container { overflow-x: auto; background: #0f172a; border-radius: 8px; border: 1px solid #334155; max-height: 600px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th, td { padding: 15px 12px; border-bottom: 1px solid #334155; }
+  th { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: #1e293b; position: sticky; top: 0; }
+  tr.interactive-row { cursor: pointer; transition: background 0.2s; }
+  tr.interactive-row:hover { background: #1e293b; }
+  .rank-col { font-weight: bold; color: #38bdf8; width: 60px; font-size: 1.1rem; }
+  
+  .war-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+  .war-form .full-width { grid-column: span 2; }
+
+  .calendar-container { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-top: 20px; }
+  .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  .calendar-header h3 { margin: 0; color: #f8fafc; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }
+  .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; color: #94a3b8; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-cell { background: #1e293b; border: 1px solid #334155; padding: 15px 5px; text-align: center; border-radius: 6px; cursor: pointer; position: relative; transition: 0.2s; color: #f8fafc; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+  .cal-cell:hover { background: #334155; border-color: #38bdf8; }
+  .cal-cell.empty { background: transparent; border: none; cursor: default; }
+  .cal-cell.empty:hover { background: transparent; }
+  .war-badge { position: absolute; top: 4px; right: 4px; background: #22c55e; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+  .analytics-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-box { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+  .stat-box span { display: block; font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
+  .stat-box strong { font-size: 1.5rem; color: #38bdf8; }
+
+  .wars-list { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; max-height: 200px; overflow-y: auto; margin-bottom: 20px; }
+  .wars-list div { padding: 8px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+  .wars-list div:last-child { border-bottom: none; }
+
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 17, 32, 0.85); justify-content: center; align-items: center; z-index: 1000; padding: 20px; overflow-y: auto; }
+  .modal-overlay.active { display: flex; }
+  .modal-content { background: #1e293b; padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; border: 1px solid #475569; position: relative; max-height: 90vh; overflow-y: auto; }
+  .modal-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; }
+  .modal-group label { font-size: 1rem; font-weight: bold; color: #f8fafc; }
+  .modal-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: #38bdf8; }
+  .modal-group input[type="number"], .modal-group select { width: 180px; }
+  .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; width: 100%; }
+  
+  .war-detail-card { background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+  .war-detail-card h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 1.2rem; }
+  .war-detail-card p { margin: 5px 0; font-size: 0.9rem; color: #cbd5e1; }
+  .war-mode-line { background: #1e293b; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.9rem; border: 1px solid #334155; }
+  .participant-tag { display: inline-block; background: #38bdf8; color: #0b1120; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin: 3px 3px 0 0; }
+
+  .hidden { display: none !important; }
+</style>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2yryd1DLpxEzoScuCR9bIcZKdGDIv3xY",
+    authDomain: "ranking-system-64c1d.firebaseapp.com",
+    projectId: "ranking-system-64c1d",
+    storageBucket: "ranking-system-64c1d.firebasestorage.app",
+    messagingSenderId: "989163878642",
+    appId: "1:989163878642:web:efe7c144313d7b0111786b",
+    measurementId: "G-M8Z23KD0QG"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db_for_orders = getFirestore(app);
+  const membersRef = collection(db_for_orders, "members");
+  const warsRef = collection(db_for_orders, "wars");
+
+  let membersData = [];
+  let warsData = [];
+  let activeTab = 'overall';
+  let searchTerm = '';
+  let currentModalId = null;
+  let activeMemberId = null;
+
+  let navMonth = new Date().getMonth();
+  let navYear = new Date().getFullYear();
+
+  const getDayOfYear = (d) => Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+  const getWeekNumber = (d) => {
+    const d2 = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d2.setUTCDate(d2.getUTCDate() + 4 - (d2.getUTCDay()||7));
+    const yearStart = new Date(Date.UTC(d2.getUTCFullYear(),0,1));
+    return Math.ceil((((d2 - yearStart) / 86400000) + 1)/7);
+  };
+
+  const now = new Date();
+  const currentDay = getDayOfYear(now);
+  const currentWeek = getWeekNumber(now);
+  const currentMonth = now.getMonth();
+
+  onSnapshot(warsRef, (snapshot) => {
+    warsData = [];
+    const warSelect = document.getElementById('warSelectModal');
+    warSelect.innerHTML = '<option value="">-- No War Selected --</option>';
+    
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      warsData.push({ id: docSnap.id, ...data });
+      
+      const opt = document.createElement('option');
+      opt.value = docSnap.id;
+      opt.textContent = `Vs ${data.enemy} (${data.date})`;
+      warSelect.appendChild(opt);
+    });
+    
+    warsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+    renderCalendar();
+  });
+
+  onSnapshot(membersRef, (snapshot) => {
+    membersData = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      let updates = {};
+      let tPoints = data.todayPoints || 0;
+      let wPoints = data.weeklyPoints || 0;
+      let mPoints = data.monthlyPoints || 0;
+
+      if (data.lastDayUpdate !== currentDay && data.lastDayUpdate !== undefined) { tPoints = 0; updates.todayPoints = 0; updates.lastDayUpdate = currentDay; }
+      if (data.lastWeekUpdate !== currentWeek && data.lastWeekUpdate !== undefined) { wPoints = 0; updates.weeklyPoints = 0; updates.lastWeekUpdate = currentWeek; }
+      if (data.lastMonthUpdate !== currentMonth && data.lastMonthUpdate !== undefined) { mPoints = 0; updates.monthlyPoints = 0; updates.lastMonthUpdate = currentMonth; }
+      
+      if (Object.keys(updates).length > 0) {
+        updateDoc(doc(db_for_orders, "members", docSnap.id), updates);
+      }
+      
+      membersData.push({
+        id: docSnap.id,
+        name: data.name || '',
+        points: data.points || 0,
+        todayPoints: tPoints,
+        weeklyPoints: wPoints,
+        monthlyPoints: mPoints,
+        attendances: data.attendances || 0,
+        warsAttended: data.warsAttended || []
+      });
+    });
+    renderTable();
+    updateUnconfirmedModeCheckboxes();
+    if (activeMemberId) populateAnalytics(activeMemberId);
+  });
+
+  const getMemberCheckboxesHTML = () => {
+    if (membersData.length === 0) {
+      return '<span style="color:#94a3b8; font-size:0.85rem;" class="no-members-msg">No members available. Add members first.</span>';
+    }
+    return membersData.map(m => `
+      <label class="participant-item" data-name="${m.name.toLowerCase()}" style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#cbd5e1; cursor:pointer; background:#0f172a; padding:4px 8px; border-radius:4px; border:1px solid #334155;">
+        <input type="checkbox" class="mode-participant-cb" value="${m.id}" style="width:16px; height:16px; accent-color:#38bdf8;"> ${m.name}
+      </label>
+    `).join('');
+  };
+
+  const updateUnconfirmedModeCheckboxes = () => {
+    document.querySelectorAll('.mode-row').forEach(row => {
+      const statusSpan = row.querySelector('.confirmation-status');
+      if (statusSpan && !statusSpan.textContent.includes('Confirmed')) {
+        const grid = row.querySelector('.mode-participants-grid');
+        if (grid) {
+          const searchVal = row.querySelector('.mode-participant-search').value.toLowerCase();
+          grid.innerHTML = getMemberCheckboxesHTML();
+          if (searchVal) {
+            row.querySelectorAll('.participant-item').forEach(item => {
+              const name = item.dataset.name;
+              item.style.display = name.includes(searchVal) ? 'flex' : 'none';
+            });
+          }
+        }
+      }
+    });
+  };
+
+  const renderTable = () => {
+    const tableBody = document.getElementById('tableBody');
+    const tableHead = document.getElementById('tableHead');
+    let filtered = membersData.filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    if (activeTab === 'overall') {
+      filtered.sort((a, b) => b.points - a.points);
+      tableHead.innerHTML = `<tr><th>Rank</th><th>Member</th><th>Total Score</th></tr>`;
+    } else {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      tableHead.innerHTML = `<tr><th>Member</th><th>View Record</th></tr>`;
+    }
+
+    tableBody.innerHTML = '';
+    let rank = 1;
+    filtered.forEach(m => {
+      const tr = document.createElement('tr');
+      tr.className = 'interactive-row';
+      tr.onclick = () => handleRowClick(m);
+      
+      if (activeTab === 'overall') {
+        tr.innerHTML = `<td class="rank-col">#${rank++}</td><td>${m.name}</td><td>${m.points.toLocaleString()}</td>`;
+      } else {
+        tr.innerHTML = `<td>${m.name}</td><td style="color:#38bdf8;">Open Analytics &rarr;</td>`;
+      }
+      tableBody.appendChild(tr);
+    });
+  };
+
+  const handleRowClick = (member) => {
+    if (activeTab === 'overall') {
+      openModal(member.id, member.name);
+    } else {
+      document.getElementById('warSectionPanel').classList.add('hidden');
+      document.getElementById('analyticsSectionPanel').classList.remove('hidden');
+      populateAnalytics(member.id);
+    }
+  };
+
+  const populateAnalytics = (id) => {
+    activeMemberId = id;
+    const member = membersData.find(m => m.id === id);
+    if (!member) return;
+
+    document.getElementById('anTitle').textContent = `${member.name}'s Analytics`;
+    document.getElementById('stToday').textContent = member.todayPoints.toLocaleString();
+    document.getElementById('stWeek').textContent = member.weeklyPoints.toLocaleString();
+    document.getElementById('stMonth').textContent = member.monthlyPoints.toLocaleString();
+    document.getElementById('stTotal').textContent = member.points.toLocaleString();
+    document.getElementById('editNameInput').value = member.name;
+
+    const warsList = document.getElementById('anWarsList');
+    if (member.warsAttended.length === 0) {
+      warsList.innerHTML = '<div>No wars attended yet.</div>';
+    } else {
+      warsList.innerHTML = member.warsAttended.map(wId => {
+        const wObj = warsData.find(wx => wx.id === wId);
+        const displayStr = wObj ? `Vs ${wObj.enemy} (${wObj.date})` : `Legacy Record: ${wId}`;
+        return `<div>⚔️ ${displayStr}</div>`;
+      }).join('');
+    }
+  };
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      activeTab = e.target.dataset.tab;
+      
+      if (activeTab === 'overall') {
+        document.getElementById('warSectionPanel').classList.remove('hidden');
+        document.getElementById('analyticsSectionPanel').classList.add('hidden');
+        activeMemberId = null;
+      }
+      renderTable();
+    });
+  });
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    searchTerm = e.target.value;
+    renderTable();
+  });
+
+  document.getElementById('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('newName').value;
+    await addDoc(membersRef, {
+      name, points: 0, todayPoints: 0, weeklyPoints: 0, monthlyPoints: 0, attendances: 0, warsAttended: [],
+      lastDayUpdate: currentDay, lastWeekUpdate: currentWeek, lastMonthUpdate: currentMonth
+    });
+    document.getElementById('newName').value = '';
+  });
+
+  const createModeRow = () => {
+    const container = document.getElementById('modesContainer');
+    const row = document.createElement('div');
+    row.className = 'mode-row';
+    row.style.cssText = "display:flex; flex-direction:column; gap:8px; background:#1e293b; padding:12px; border-radius:6px; border:1px solid #475569;";
+    
+    row.innerHTML = `
+      <div style="display:flex; gap:5px; align-items:center; width:100%;">
+        <select class="m-type" style="flex:2">
+          <option value="1v1">1v1</option>
+          <option value="3v3">3v3</option>
+          <option value="5v5">5v5</option>
+          <option value="10v10">10v10</option>
+          <option value="All Out War">All Out War</option>
+          <option value="Gladiator">Gladiator</option>
+          <option value="Custom">Custom...</option>
+        </select>
+        <input type="text" class="m-custom hidden" placeholder="Name" style="flex:2">
+        <input type="number" class="m-wins" placeholder="W" style="flex:1" required>
+        <input type="number" class="m-loss" placeholder="L" style="flex:1" required>
+        <button type="button" class="danger-btn btn-remove-mode" style="padding:10px 15px;">X</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+        <span style="font-size:0.9rem; font-weight:bold; color:#38bdf8;">Select Participants for this Battle Mode:</span>
+        <input type="text" class="mode-participant-search" placeholder="Search participant..." style="width:180px; padding:6px; font-size:0.85rem;" autocomplete="off">
+      </div>
+      <div class="mode-participants-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap:5px; max-height:120px; overflow-y:auto; background:#0f172a; padding:8px; border-radius:4px; border:1px solid #334155;">
+        ${getMemberCheckboxesHTML()}
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+        <span class="confirmation-status" style="font-size:0.85rem; color:#ef4444; font-weight:bold;">Not Confirmed</span>
+        <button type="button" class="primary-btn btn-confirm-mode" style="padding:6px 12px; font-size:0.85rem;">Are there already the ones who really participated?</button>
+      </div>
+    `;
+
+    const sel = row.querySelector('.m-type');
+    const cust = row.querySelector('.m-custom');
+    sel.addEventListener('change', (e) => {
+      if (e.target.value === 'Custom') {
+        cust.classList.remove('hidden');
+        cust.required = true;
+      } else {
+        cust.classList.add('hidden');
+        cust.required = false;
+        cust.value = '';
+      }
+    });
+
+    const searchInput = row.querySelector('.mode-participant-search');
+    searchInput.addEventListener('input', (e) => {
+      const val = e.target.value.toLowerCase();
+      row.querySelectorAll('.participant-item').forEach(item => {
+        const name = item.dataset.name;
+        item.style.display = name.includes(val) ? 'flex' : 'none';
+      });
+    });
+
+    row.querySelector('.btn-remove-mode').addEventListener('click', () => {
+      row.remove();
+      checkAllModesConfirmed();
+    });
+
+    const confirmBtn = row.querySelector('.btn-confirm-mode');
+    const statusSpan = row.querySelector('.confirmation-status');
+    
+    confirmBtn.addEventListener('click', () => {
+      const checkedCbs = row.querySelectorAll('.mode-participant-cb:checked');
+      if (checkedCbs.length === 0) {
+        alert("Please select at least one participant who joined this specific battle mode before confirming.");
+        return;
+      }
+      
+      row.querySelectorAll('input, select').forEach(el => el.disabled = true);
+      confirmBtn.disabled = true;
+      confirmBtn.style.opacity = '0.5';
+      statusSpan.textContent = 'Confirmed ✓';
+      statusSpan.style.color = '#22c55e';
+      
+      checkAllModesConfirmed();
+    });
+
+    container.appendChild(row);
+    checkAllModesConfirmed();
+  };
+
+  const checkAllModesConfirmed = () => {
+    const container = document.getElementById('modesContainer');
+    const rows = container.children;
+    const addModeBtn = document.getElementById('btnAddMode');
+    
+    if (rows.length === 0) {
+      addModeBtn.textContent = "+ Add Battle Mode";
+      addModeBtn.disabled = false;
+      addModeBtn.style.opacity = '1';
+      return;
+    }
+
+    addModeBtn.textContent = "+ Add Another Battle Mode";
+    const lastRow = rows[rows.length - 1];
+    const statusSpan = lastRow.querySelector('.confirmation-status');
+    const isConfirmed = statusSpan && statusSpan.textContent.includes('Confirmed');
+
+    if (isConfirmed) {
+      addModeBtn.disabled = false;
+      addModeBtn.style.opacity = '1';
+    } else {
+      addModeBtn.disabled = true;
+      addModeBtn.style.opacity = '0.5';
+    }
+  };
+
+  document.getElementById('btnAddMode').addEventListener('click', createModeRow);
+
+  document.getElementById('warForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const rows = document.querySelectorAll('.mode-row');
+    if (rows.length === 0) {
+      alert("Please add at least one battle mode.");
+      return;
+    }
+
+    let allConfirmed = true;
+    rows.forEach(r => {
+      const statusSpan = r.querySelector('.confirmation-status');
+      if (!statusSpan || !statusSpan.textContent.includes('Confirmed')) {
+        allConfirmed = false;
+      }
+    });
+
+    if (!allConfirmed) {
+      alert("Please confirm the participants for all battle modes by clicking 'Are there already the ones who really participated?' before recording the war.");
+      return;
+    }
+
+    const modes = [];
+    let allParticipantIds = new Set();
+
+    rows.forEach(row => {
+      const typeVal = row.querySelector('.m-type').value;
+      const finalType = typeVal === 'Custom' ? row.querySelector('.m-custom').value : typeVal;
+      const wins = parseInt(row.querySelector('.m-wins').value, 10);
+      const losses = parseInt(row.querySelector('.m-loss').value, 10);
+      
+      const participantIds = [];
+      row.querySelectorAll('.mode-participant-cb:checked').forEach(cb => {
+        participantIds.push(cb.value);
+        allParticipantIds.add(cb.value);
+      });
+
+      modes.push({
+        type: finalType,
+        wins: isNaN(wins) ? 0 : wins,
+        losses: isNaN(losses) ? 0 : losses,
+        participants: participantIds
+      });
+    });
+
+    const warDocRef = await addDoc(warsRef, {
+      enemy: document.getElementById('wEnemy').value,
+      date: document.getElementById('wDate').value,
+      winner: document.getElementById('wWinner').value,
+      remarks: document.getElementById('wRemarks').value,
+      modes: modes
+    });
+
+    for (const mId of allParticipantIds) {
+      const memberRef = doc(db_for_orders, "members", mId);
+      const memberObj = membersData.find(m => m.id === mId);
+      let updatedWars = memberObj ? [...(memberObj.warsAttended || [])] : [];
+      if (memberObj && !updatedWars.includes(warDocRef.id)) {
+        updatedWars.push(warDocRef.id);
+      }
+      await updateDoc(memberRef, {
+        points: increment(50),
+        todayPoints: increment(50),
+        weeklyPoints: increment(50),
+        monthlyPoints: increment(50),
+        attendances: increment(1),
+        warsAttended: updatedWars,
+        lastDayUpdate: currentDay,
+        lastWeekUpdate: currentWeek,
+        lastMonthUpdate: currentMonth
+      });
+    }
+
+    document.getElementById('warForm').reset();
+    document.getElementById('modesContainer').innerHTML = '';
+    checkAllModesConfirmed();
+  });
+
+  window.deleteWar = async (id) => {
+    if (confirm("Delete this war record?")) {
+      await deleteDoc(doc(db_for_orders, "wars", id));
+      document.getElementById('warDetailsModal').classList.remove('active');
+    }
+  };
+
+  const renderCalendar = () => {
+    const calGrid = document.getElementById('calendarGrid');
+    const monthYear = document.getElementById('calMonthYear');
+    calGrid.innerHTML = '';
+
+    const firstDay = new Date(navYear, navMonth, 1).getDay();
+    const daysInMonth = new Date(navYear, navMonth + 1, 0).getDate();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    monthYear.textContent = `${monthNames[navMonth]} ${navYear}`;
+
+    for (let i = 0; i < firstDay; i++) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'cal-cell empty';
+      calGrid.appendChild(emptyDiv);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateString = `${navYear}-${String(navMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      cell.textContent = day;
+
+      const warsOnDate = warsData.filter(w => w.date === dateString);
+      if (warsOnDate.length > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'war-badge';
+        badge.textContent = warsOnDate.length;
+        cell.appendChild(badge);
+      }
+
+      cell.addEventListener('click', () => openWarDetails(dateString, warsOnDate));
+      calGrid.appendChild(cell);
+    }
+  };
+
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    navMonth--;
+    if (navMonth < 0) { navMonth = 11; navYear--; }
+    renderCalendar();
+  });
+
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    navMonth++;
+    if (navMonth > 11) { navMonth = 0; navYear++; }
+    renderCalendar();
+  });
+
+  const openWarDetails = (dateString, warsOnDate) => {
+    if (warsOnDate.length === 0) return;
+    
+    const container = document.getElementById('warDetailsContent');
+    container.innerHTML = '';
+    document.getElementById('wdTitle').textContent = `Wars on ${dateString}`;
+
+    warsOnDate.forEach(war => {
+      const card = document.createElement('div');
+      card.className = 'war-detail-card';
+      
+      const normalizedModes = war.modes || [{ type: war.type || 'Unknown', wins: war.wins || 0, losses: war.losses || 0, participants: [] }];
+      
+      let modesHTML = normalizedModes.map(m => {
+        let modeParticipantsHTML = '';
+        if (m.participants && m.participants.length > 0) {
+          let pNames = m.participants.map(pId => {
+            let mem = membersData.find(x => x.id === pId);
+            return mem ? mem.name : pId;
+          });
+          modeParticipantsHTML = `<div style="margin-top:4px; font-size:0.85rem; color:#94a3b8;"><strong>Participants:</strong> ${pNames.map(name => `<span class="participant-tag">${name}</span>`).join('')}</div>`;
+        } else {
+          modeParticipantsHTML = `<div style="margin-top:4px; font-size:0.85rem; color:#94a3b8;"><strong>Participants:</strong> None recorded</div>`;
+        }
+
+        return `
+          <div class="war-mode-line">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong>${m.type}</strong>
+              <span><span style="color:#38bdf8;">W: ${m.wins}</span> | <span style="color:#ef4444;">L: ${m.losses}</span></span>
+            </div>
+            ${modeParticipantsHTML}
+          </div>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <h3>Enemy Gang Name: ${war.enemy}</h3>
+        <p><strong>Winner:</strong> ${war.winner || 'Not specified'}</p>
+        <p><strong>Remarks:</strong> ${war.remarks || 'None'}</p>
+        <div style="margin-top:10px; margin-bottom:10px;">${modesHTML}</div>
+        <button class="danger-btn" style="margin-top:15px; padding: 5px 10px; font-size: 0.8rem;" onclick="deleteWar('${war.id}')">Delete War Record</button>
+      `;
+      container.appendChild(card);
+    });
+
+    document.getElementById('warDetailsModal').classList.add('active');
+  };
+
+  document.getElementById('btnCloseWarDetails').addEventListener('click', () => {
+    document.getElementById('warDetailsModal').classList.remove('active');
+  });
+
+  const openModal = (id, name) => {
+    currentModalId = id;
+    document.getElementById('modalTitle').textContent = `Update ${name}`;
+    document.getElementById('attendanceCheck').checked = false;
+    document.getElementById('bonusInput').value = '';
+    document.getElementById('deductInput').value = '';
+    document.getElementById('warSelectModal').value = '';
+    document.getElementById('pointModal').classList.add('active');
+  };
+
+  document.getElementById('btnCancel').addEventListener('click', () => {
+    document.getElementById('pointModal').classList.remove('active');
+    currentModalId = null;
+  });
+
+  document.getElementById('btnModalDelete').addEventListener('click', async () => {
+    if (!currentModalId) return;
+    if (confirm("Are you sure you want to completely delete this member?")) {
+      await deleteDoc(doc(db_for_orders, "members", currentModalId));
+      document.getElementById('pointModal').classList.remove('active');
+      currentModalId = null;
+    }
+  });
+
+  document.getElementById('btnClearToday').addEventListener('click', async () => {
+    if (!currentModalId) return;
+    const member = membersData.find(m => m.id === currentModalId);
+    if (!member) return;
+    const todayPts = member.todayPoints || 0;
+    if (todayPts > 0) {
+      await updateDoc(doc(db_for_orders, "members", currentModalId), {
+        points: increment(-todayPts),
+        todayPoints: 0,
+        weeklyPoints: increment(-todayPts),
+        monthlyPoints: increment(-todayPts)
+      });
+    }
+    document.getElementById('pointModal').classList.remove('active');
+    currentModalId = null;
+  });
+
+  document.getElementById('btnClearAll').addEventListener('click', async () => {
+    if (!currentModalId) return;
+    await updateDoc(doc(db_for_orders, "members", currentModalId), {
+      points: 0,
+      todayPoints: 0,
+      weeklyPoints: 0,
+      monthlyPoints: 0
+    });
+    document.getElementById('pointModal').classList.remove('active');
+    currentModalId = null;
+  });
+
+  document.getElementById('btnSave').addEventListener('click', async () => {
+    if (!currentModalId) return;
+    const member = membersData.find(m => m.id === currentModalId);
+    let pts = 0;
+    let att = 0;
+    
+    if (document.getElementById('attendanceCheck').checked) { pts += 50; att = 1; }
+    const bonus = parseInt(document.getElementById('bonusInput').value, 10);
+    if (!isNaN(bonus)) pts += bonus;
+
+    const deduction = parseInt(document.getElementById('deductInput').value, 10);
+    if (!isNaN(deduction)) pts -= deduction;
+    
+    const selectedWar = document.getElementById('warSelectModal').value;
+    let updatedWars = member.warsAttended || [];
+    if (selectedWar && !updatedWars.includes(selectedWar)) {
+      updatedWars.push(selectedWar);
+    }
+
+    let updatePayload = {
+      attendances: increment(att),
+      warsAttended: updatedWars,
+      lastDayUpdate: currentDay,
+      lastWeekUpdate: currentWeek,
+      lastMonthUpdate: currentMonth
+    };
+
+    if (pts !== 0) {
+      updatePayload.points = increment(pts);
+      updatePayload.todayPoints = increment(pts);
+      updatePayload.weeklyPoints = increment(pts);
+      updatePayload.monthlyPoints = increment(pts);
+    }
+
+    if (pts !== 0 || att > 0 || selectedWar) {
+      await updateDoc(doc(db_for_orders, "members", currentModalId), updatePayload);
+    }
+    
+    document.getElementById('pointModal').classList.remove('active');
+    currentModalId = null;
+  });
+
+  document.getElementById('btnUpdateUser').addEventListener('click', async () => {
+    if (!activeMemberId) return;
+    const newName = document.getElementById('editNameInput').value;
+    if (newName) await updateDoc(doc(db_for_orders, "members", activeMemberId), { name: newName });
+  });
+
+  document.getElementById('btnDeleteUser').addEventListener('click', async () => {
+    if (!activeMemberId) return;
+    if (confirm("Delete this member completely?")) {
+      await deleteDoc(doc(db_for_orders, "members", activeMemberId));
+      document.getElementById('analyticsSectionPanel').classList.add('hidden');
+      document.getElementById('warSectionPanel').classList.remove('hidden');
+      activeMemberId = null;
+    }
+  });
+
+  document.getElementById('btnCloseAnalytics').addEventListener('click', () => {
+    document.getElementById('analyticsSectionPanel').classList.add('hidden');
+    document.getElementById('warSectionPanel').classList.remove('hidden');
+    activeMemberId = null;
+  });
+
+  checkAllModesConfirmed();
+</script>
+</head>
+<body>
+  <div class="main-wrapper">
+    <div class="panel">
+      <h1>Live Leaderboard</h1>
+      <div class="tabs">
+        <button class="tab active" data-tab="overall">Overall Points</button>
+        <button class="tab" data-tab="analytics">Analytics</button>
+      </div>
+      <div class="controls">
+        <input type="text" id="searchInput" class="search-box" placeholder="Search name..." autocomplete="off">
+        <form id="addForm" class="crud-form">
+          <input type="text" id="newName" placeholder="Add new member..." required autocomplete="off">
+          <button type="submit" class="primary-btn">Create</button>
+        </form>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="warSectionPanel">
+      <h1>War Section</h1>
+      <form id="warForm" class="war-form">
+        <input type="text" id="wEnemy" placeholder="Enemy Gang Name" required autocomplete="off">
+        <input type="date" id="wDate" required>
+        <input type="text" id="wWinner" class="full-width" placeholder="Who won the match?" autocomplete="off">
+        <input type="text" id="wRemarks" class="full-width" placeholder="Remarks" autocomplete="off">
+        
+        <div id="modesContainer" class="full-width" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 5px;">
+        </div>
+        <button type="button" id="btnAddMode" class="secondary-btn full-width" style="margin-bottom: 10px;">+ Add Battle Mode</button>
+        
+        <button type="submit" class="primary-btn full-width">Record War</button>
+      </form>
+
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <button type="button" id="prevMonth" class="secondary-btn">&lt;</button>
+          <h3 id="calMonthYear"></h3>
+          <button type="button" id="nextMonth" class="secondary-btn">&gt;</button>
+        </div>
+        <div class="calendar-days">
+          <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+    </div>
+
+    <div class="panel hidden" id="analyticsSectionPanel">
+      <h1><span id="anTitle">Analytics</span> <button id="btnCloseAnalytics" class="secondary-btn">Close</button></h1>
+      <div class="analytics-stats">
+        <div class="stat-box"><span>Today</span><strong id="stToday">0</strong></div>
+        <div class="stat-box"><span>This Week</span><strong id="stWeek">0</strong></div>
+        <div class="stat-box"><span>This Month</span><strong id="stMonth">0</strong></div>
+        <div class="stat-box"><span>Total Points</span><strong id="stTotal">0</strong></div>
+      </div>
+      <h3 style="color:#f8fafc; margin-top:0;">Wars Attended</h3>
+      <div class="wars-list" id="anWarsList"></div>
+      <h3 style="color:#f8fafc;">Manage Member</h3>
+      <div class="controls">
+        <input type="text" id="editNameInput">
+        <button id="btnUpdateUser" class="primary-btn">Rename</button>
+        <button id="btnDeleteUser" class="danger-btn">Drop Member</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="warDetailsModal">
+    <div class="modal-content">
+      <h2 id="wdTitle" style="color:#38bdf8; margin-top:0;">War Details</h2>
+      <div id="warDetailsContent"></div>
+      <div class="modal-actions" style="justify-content: flex-end;">
+        <button class="secondary-btn" id="btnCloseWarDetails">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="pointModal">
+    <div class="modal-content">
+      <h2 id="modalTitle" style="color:#38bdf8; margin-top:0; text-align:center;">Update Member</h2>
+      <div class="modal-group">
+        <label for="attendanceCheck">Add Attendance (50 Pts)</label>
+        <input type="checkbox" id="attendanceCheck">
+      </div>
+      <div class="modal-group">
+        <label>Mark War Attended</label>
+        <select id="warSelectModal"></select>
+      </div>
+      <div class="modal-group">
+        <label for="bonusInput">Bonus Points</label>
+        <input type="number" id="bonusInput" placeholder="Blank">
+      </div>
+      <div class="modal-group">
+        <label for="deductInput">Deductions</label>
+        <input type="number" id="deductInput" placeholder="0">
+      </div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button type="button" class="secondary-btn" id="btnClearToday" style="flex:1; font-size:0.85rem; background:#334155; color:#f8fafc;">Clear Points for Today</button>
+        <button type="button" class="danger-btn" id="btnClearAll" style="flex:1; font-size:0.85rem;">Clear Points Completely</button>
+      </div>
+      <div class="modal-actions">
+        <button class="danger-btn" id="btnModalDelete">Drop Member</button>
+        <div class="modal-actions-right">
+          <button class="secondary-btn" id="btnCancel">Cancel</button>
+          <button class="primary-btn" id="btnSave">Save and Update</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
