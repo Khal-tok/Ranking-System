@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Live Leaderboard & War System</title>
 <style>
   :root {
@@ -20,9 +20,13 @@
   h2 { color: var(--primary-color); margin-top: 0; }
   
   .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  input, select { padding: 10px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: white; font-size: 0.95rem; width: 100%; }
+  input, select { padding: 10px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: white; font-size: 16px; width: 100%; }
   input:focus, select:focus { outline: none; border-color: var(--primary-color); }
-  .search-box { flex: 1; min-width: 150px; }
+  
+  .search-wrapper { position: relative; display: flex; flex: 1; min-width: 150px; }
+  .search-wrapper input { width: 100%; padding-right: 35px; }
+  .clear-search-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer; padding: 0; line-height: 1; }
+  .clear-search-btn:hover { color: #f8fafc; }
   
   button.primary-btn { padding: 10px 20px; background: var(--primary-color); color: #0b1120; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
   button.primary-btn:hover { filter: brightness(1.15); }
@@ -312,7 +316,8 @@
 
   const renderTable = () => {
     const tableBody = document.getElementById('tableBody');
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = searchInput.value.toLowerCase();
     
     let filtered = membersData.filter(m => m.name.toLowerCase().includes(searchTerm));
     filtered.sort((a, b) => b.points - a.points);
@@ -336,7 +341,24 @@
     });
   };
 
-  document.getElementById('searchInput').addEventListener('input', renderTable);
+  const searchInput = document.getElementById('searchInput');
+  const clearSearchBtn = document.getElementById('btnClearSearch');
+
+  searchInput.addEventListener('input', (e) => {
+    if (e.target.value.length > 0) {
+      clearSearchBtn.classList.remove('hidden');
+    } else {
+      clearSearchBtn.classList.add('hidden');
+    }
+    renderTable();
+  });
+
+  clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    clearSearchBtn.classList.add('hidden');
+    renderTable();
+    searchInput.focus();
+  });
 
   const populateAnalytics = (id) => {
     activeMemberId = id;
@@ -414,10 +436,10 @@
     const customInput = document.getElementById('bmCustom');
     const winsInput = document.getElementById('bmWins');
     const lossesInput = document.getElementById('bmLosses');
-    const searchInput = document.getElementById('bmSearch');
+    const bmSearchInput = document.getElementById('bmSearch');
     const grid = document.getElementById('bmParticipantsGrid');
 
-    searchInput.value = '';
+    bmSearchInput.value = '';
     grid.innerHTML = '';
 
     if (membersData.length === 0) {
@@ -790,7 +812,10 @@
       </h1>
       
       <div class="controls">
-        <input type="text" id="searchInput" class="search-box" placeholder="Search name..." autocomplete="off">
+        <div class="search-wrapper">
+          <input type="text" id="searchInput" class="search-box" placeholder="Search name..." autocomplete="off">
+          <button type="button" id="btnClearSearch" class="clear-search-btn hidden">&times;</button>
+        </div>
         <form id="addForm" class="crud-form admin-only">
           <input type="text" id="newName" placeholder="Add new member..." required autocomplete="off">
           <button type="submit" class="primary-btn">Create</button>
