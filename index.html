@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Live Leaderboard & War System</title>
 <style>
+  :root {
+    --primary-color: #38bdf8;
+  }
+
   * { box-sizing: border-box; }
   body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
   
@@ -12,16 +16,16 @@
   .main-wrapper.admin-active { grid-template-columns: 1fr 1.4fr; max-width: 1550px; }
   
   .panel { background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #334155; display: flex; flex-direction: column; }
-  h1 { color: #38bdf8; font-size: 1.5rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-  h2 { color: #38bdf8; margin-top: 0; }
+  h1 { color: var(--primary-color); font-size: 1.5rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  h2 { color: var(--primary-color); margin-top: 0; }
   
   .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
   input, select { padding: 10px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: white; font-size: 0.95rem; width: 100%; }
-  input:focus, select:focus { outline: none; border-color: #38bdf8; }
+  input:focus, select:focus { outline: none; border-color: var(--primary-color); }
   .search-box { flex: 1; min-width: 150px; }
   
-  button.primary-btn { padding: 10px 20px; background: #38bdf8; color: #0b1120; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
-  button.primary-btn:hover { background: #0ea5e9; }
+  button.primary-btn { padding: 10px 20px; background: var(--primary-color); color: #0b1120; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+  button.primary-btn:hover { filter: brightness(1.15); }
   button.danger-btn { padding: 10px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
   button.danger-btn:hover { background: #dc2626; }
   button.secondary-btn { padding: 10px 20px; background: transparent; border: 1px solid #475569; color: #94a3b8; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -35,8 +39,8 @@
   th { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: #1e293b; position: sticky; top: 0; }
   tr.interactive-row { transition: background 0.2s; cursor: pointer; }
   tr.interactive-row:hover { background: #1e293b; }
-  tr.interactive-row.selected { background: #334155; border-left: 4px solid #38bdf8; }
-  .rank-col { font-weight: bold; color: #38bdf8; width: 60px; font-size: 1.1rem; }
+  tr.interactive-row.selected { background: #334155; border-left: 4px solid var(--primary-color); }
+  .rank-col { font-weight: bold; color: var(--primary-color); width: 60px; font-size: 1.1rem; }
   
   .war-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
   .war-form .full-width { grid-column: span 2; }
@@ -47,14 +51,14 @@
   .calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; color: #94a3b8; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px; }
   .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
   .cal-cell { background: #1e293b; border: 1px solid #334155; padding: 15px 5px; text-align: center; border-radius: 6px; cursor: pointer; position: relative; transition: 0.2s; color: #f8fafc; min-height: 50px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-  .cal-cell:hover { background: #334155; border-color: #38bdf8; }
+  .cal-cell:hover { background: #334155; border-color: var(--primary-color); }
   .cal-cell.empty { background: transparent; border: none; cursor: default; }
   .war-badge { position: absolute; top: 4px; right: 4px; background: #22c55e; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; font-weight: bold; }
 
   .analytics-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
   .stat-box { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
   .stat-box span { display: block; font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
-  .stat-box strong { font-size: 1.5rem; color: #38bdf8; }
+  .stat-box strong { font-size: 1.5rem; color: var(--primary-color); }
 
   .wars-list { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; max-height: 300px; overflow-y: auto; margin-bottom: 20px; }
   .wars-list div { padding: 8px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
@@ -65,14 +69,18 @@
   .modal-content { background: #1e293b; padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; border: 1px solid #475569; position: relative; max-height: 90vh; overflow-y: auto; }
   .modal-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
   .modal-group label { font-size: 1rem; font-weight: bold; color: #f8fafc; }
-  .modal-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: #38bdf8; }
-  .modal-group input[type="number"], .modal-group select, .modal-group input[type="text"], .modal-group input[type="password"] { width: 100%; max-width: 180px; }
+  .modal-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary-color); }
+  .modal-group input[type="number"], .modal-group select, .modal-group input[type="text"], .modal-group input[type="password"], .modal-group input[type="color"] { width: 100%; max-width: 180px; }
   .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; width: 100%; flex-wrap: wrap; gap: 10px; }
   
-  .war-detail-card { background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-  .war-detail-card h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 1.2rem; }
+  .war-detail-card { background: #0f172a; border: 1px solid var(--primary-color); border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+  .war-detail-card h3 { margin: 0 0 5px 0; color: var(--primary-color); font-size: 1.2rem; }
   .war-mode-line { background: #1e293b; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.9rem; border: 1px solid #334155; }
-  .participant-tag { display: inline-block; background: #38bdf8; color: #0b1120; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin: 3px 3px 0 0; }
+  .participant-tag { display: inline-block; background: var(--primary-color); color: #0b1120; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; margin: 3px 3px 0 0; }
+
+  .theme-picker-container { display: flex; align-items: center; gap: 8px; background: #0f172a; padding: 4px 8px; border-radius: 6px; border: 1px solid #334155; }
+  .theme-picker-container input[type="color"] { width: 28px; height: 28px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
+  .theme-picker-container span { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: bold; }
 
   .hidden { display: none !important; }
   .admin-only { display: none; }
@@ -113,12 +121,18 @@
   let activeMemberId = null;
   let isAdmin = false;
   let loggedInAdmin = null;
-
   let pendingModes = [];
   let editModeIndex = -1;
-
   let navMonth = new Date().getMonth();
   let navYear = new Date().getFullYear();
+
+  const themeColorInput = document.getElementById('themeColorInput');
+
+  themeColorInput.addEventListener('input', (e) => {
+    const color = e.target.value;
+    document.documentElement.style.setProperty('--primary-color', color);
+    localStorage.setItem('themeColor', color);
+  });
 
   const getDayOfYear = (d) => Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
   const getWeekNumber = (d) => {
@@ -167,6 +181,7 @@
       document.getElementById('btnAdminCredsToggle').classList.add('hidden');
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
       document.getElementById('mainWrapper').classList.remove('admin-active');
+      document.documentElement.style.setProperty('--primary-color', '#38bdf8');
       renderTable();
     } else {
       document.getElementById('loginModal').classList.add('active');
@@ -203,6 +218,10 @@
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
       document.getElementById('mainWrapper').classList.add('admin-active');
       
+      const savedColor = localStorage.getItem('themeColor') || '#38bdf8';
+      document.documentElement.style.setProperty('--primary-color', savedColor);
+      themeColorInput.value = savedColor;
+
       renderTable();
     } else {
       showCustomDialog('Login Failed', 'Invalid admin credentials.');
@@ -377,7 +396,7 @@
       const row = document.createElement('div');
       row.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:#1e293b; padding:12px; border-radius:6px; margin-bottom:8px; border:1px solid #475569;";
       row.innerHTML = `
-        <span style="color:#38bdf8; font-weight:bold; font-size:1rem;">${sanitize(mode.type)} <span style="color:#94a3b8; font-size:0.85rem; font-weight:normal; margin-left:8px;">(${mode.wins}W - ${mode.losses}L, ${mode.participants.length} participants)</span></span>
+        <span style="color:var(--primary-color); font-weight:bold; font-size:1rem;">${sanitize(mode.type)} <span style="color:#94a3b8; font-size:0.85rem; font-weight:normal; margin-left:8px;">(${mode.wins}W - ${mode.losses}L, ${mode.participants.length} participants)</span></span>
         <button type="button" class="secondary-btn btn-edit-pending" data-index="${index}" style="padding:6px 12px; font-size:0.85rem;">Details</button>
       `;
       container.appendChild(row);
@@ -414,7 +433,7 @@
         cb.type = 'checkbox';
         cb.className = 'bm-cb';
         cb.value = m.id;
-        cb.style.cssText = "width:18px; height:18px; accent-color:#38bdf8;";
+        cb.style.cssText = "width:18px; height:18px; accent-color:var(--primary-color);";
         
         lbl.appendChild(cb);
         lbl.appendChild(document.createTextNode(" " + sanitize(m.name)));
@@ -537,7 +556,20 @@
     document.getElementById('warForm').reset();
     pendingModes = [];
     renderPendingModes();
-    showCustomDialog('Success', 'War record completely saved!');
+    
+    const compliments = [
+      "You did great and thank you for the effort of putting the points",
+      "Your dedication to updating these records is truly admirable",
+      "You handled that entire process like an absolute pro",
+      "Thank you for keeping our system perfectly organized",
+      "You're doing an amazing job steering the team",
+      "I appreciate all your hard work on these records"
+    ];
+    
+    const randomCompliment = compliments[Math.floor(Math.random() * compliments.length)];
+    const specialMessage = `${randomCompliment} my querencia, iloveyouuuuuuuuuu`;
+    
+    showCustomDialog('War Recorded', specialMessage);
   });
 
   window.deleteWar = async (id) => {
@@ -622,7 +654,7 @@
           <div class="war-mode-line">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <strong>${sanitize(m.type)}</strong>
-              <span><span style="color:#38bdf8;">W: ${m.wins}</span> | <span style="color:#ef4444;">L: ${m.losses}</span></span>
+              <span><span style="color:var(--primary-color);">W: ${m.wins}</span> | <span style="color:#ef4444;">L: ${m.losses}</span></span>
             </div>
             ${modeParticipantsHTML}
           </div>
@@ -630,7 +662,7 @@
       }).join('');
 
       card.innerHTML = `
-        <h3 style="color:#38bdf8; margin:0 0 5px 0;">Enemy: ${sanitize(war.enemy)}</h3>
+        <h3 style="color:var(--primary-color); margin:0 0 5px 0;">Enemy: ${sanitize(war.enemy)}</h3>
         <p style="margin:5px 0; font-size:0.9rem; color:#cbd5e1;"><strong>Winner:</strong> ${sanitize(war.winner || 'Not specified')}</p>
         <p style="margin:5px 0; font-size:0.9rem; color:#cbd5e1;"><strong>Remarks:</strong> ${sanitize(war.remarks || 'None')}</p>
         <div style="margin-top:10px; margin-bottom:10px;">${modesHTML}</div>
@@ -747,7 +779,11 @@
     <div class="panel">
       <h1 style="margin-bottom: 25px;">
         Live Leaderboard 
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <div class="theme-picker-container admin-only">
+            <span>Theme</span>
+            <input type="color" id="themeColorInput">
+          </div>
           <button id="btnAdminCredsToggle" class="secondary-btn hidden" style="font-size: 0.85rem; padding: 6px 12px;">Admin Credentials</button>
           <button id="btnAuthToggle" class="secondary-btn" style="font-size: 0.85rem; padding: 6px 12px;">Admin Login</button>
         </div>
@@ -798,7 +834,7 @@
   <div class="modal-overlay" id="analyticsModal">
     <div class="modal-content" style="max-width: 600px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: #38bdf8;" id="anTitle">Analytics</h2>
+        <h2 style="margin: 0; color: var(--primary-color);" id="anTitle">Analytics</h2>
         <button id="btnAdminEditPoints" class="primary-btn admin-only" style="font-size: 0.85rem; padding: 8px 12px;">Manage Points</button>
       </div>
       
@@ -862,7 +898,7 @@
 
   <div class="modal-overlay" id="customDialogModal" style="z-index: 2000;">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
-      <h2 id="dialogTitle" style="color:#38bdf8; margin-top:0;">Alert</h2>
+      <h2 id="dialogTitle" style="color:var(--primary-color); margin-top:0;">Alert</h2>
       <p id="dialogMessage" style="color:#cbd5e1; font-size:1rem; margin-bottom: 25px; line-height: 1.5;"></p>
       <div style="display:flex; justify-content:center; gap:10px;">
         <button id="btnDialogCancel" class="secondary-btn hidden">Cancel</button>
@@ -905,7 +941,7 @@
 
   <div class="modal-overlay" id="warDetailsModal">
     <div class="modal-content">
-      <h2 id="wdTitle" style="color:#38bdf8; margin-top:0;">War Details</h2>
+      <h2 id="wdTitle" style="color:var(--primary-color); margin-top:0;">War Details</h2>
       <div id="warDetailsContent"></div>
       <div class="modal-actions" style="justify-content: flex-end;">
         <button class="secondary-btn" id="btnCloseWarDetails">Close</button>
@@ -915,7 +951,7 @@
 
   <div class="modal-overlay" id="pointModal">
     <div class="modal-content">
-      <h2 id="modalTitle" style="color:#38bdf8; margin-top:0; text-align:center;">Update Member</h2>
+      <h2 id="modalTitle" style="color:var(--primary-color); margin-top:0; text-align:center;">Update Member</h2>
       <div class="modal-group">
         <label for="attendanceCheck">Add Attendance (50 Pts)</label>
         <input type="checkbox" id="attendanceCheck">
