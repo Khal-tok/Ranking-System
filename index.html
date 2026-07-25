@@ -7,17 +7,13 @@
 <style>
   * { box-sizing: border-box; }
   body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0b1120; color: #f8fafc; margin: 0; padding: 15px; display: flex; justify-content: center; min-height: 100vh; }
-  .main-wrapper { display: grid; grid-template-columns: 1fr 1.4fr; gap: 20px; max-width: 1550px; width: 100%; align-items: start; }
+  
+  .main-wrapper { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 800px; width: 100%; align-items: start; margin: 0 auto; transition: all 0.3s ease; }
+  .main-wrapper.admin-active { grid-template-columns: 1fr 1.4fr; max-width: 1550px; }
   
   .panel { background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #334155; display: flex; flex-direction: column; }
   h1 { color: #38bdf8; font-size: 1.5rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
   h2 { color: #38bdf8; margin-top: 0; }
-  
-  .admin-tabs { display: none; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #334155; padding-bottom: 10px; flex-wrap: wrap; }
-  .admin-tabs.active { display: flex; }
-  .tab { padding: 10px 20px; background: transparent; color: #94a3b8; border: none; cursor: pointer; font-size: 1rem; font-weight: bold; border-radius: 6px; transition: 0.3s; flex: 1; text-align: center; }
-  .tab:hover { color: #f8fafc; }
-  .tab.active { background: #38bdf8; color: #0b1120; }
   
   .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
   input, select { padding: 10px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: white; font-size: 0.95rem; width: 100%; }
@@ -39,7 +35,7 @@
   th { color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; background: #1e293b; position: sticky; top: 0; }
   tr.interactive-row { transition: background 0.2s; cursor: pointer; }
   tr.interactive-row:hover { background: #1e293b; }
-  tr.interactive-row.selected { background: #334155; }
+  tr.interactive-row.selected { background: #334155; border-left: 4px solid #38bdf8; }
   .rank-col { font-weight: bold; color: #38bdf8; width: 60px; font-size: 1.1rem; }
   
   .war-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
@@ -70,7 +66,7 @@
   .modal-group { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #334155; flex-wrap: wrap; gap: 10px; }
   .modal-group label { font-size: 1rem; font-weight: bold; color: #f8fafc; }
   .modal-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: #38bdf8; }
-  .modal-group input[type="number"], .modal-group select { width: 100%; max-width: 180px; }
+  .modal-group input[type="number"], .modal-group select, .modal-group input[type="text"], .modal-group input[type="password"] { width: 100%; max-width: 180px; }
   .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; width: 100%; flex-wrap: wrap; gap: 10px; }
   
   .war-detail-card { background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
@@ -81,21 +77,19 @@
   .hidden { display: none !important; }
   .admin-only { display: none; }
 
-  .placeholder-msg { display: flex; align-items: center; justify-content: center; height: 100%; color: #94a3b8; font-style: italic; min-height: 200px; text-align: center; }
-
   @media (max-width: 768px) {
-    .main-wrapper { grid-template-columns: 1fr; }
+    .main-wrapper.admin-active { grid-template-columns: 1fr; }
     .controls { flex-direction: column; }
     .crud-form { flex-direction: column; width: 100%; }
     .war-form { grid-template-columns: 1fr; }
     .war-form .full-width { grid-column: 1; }
     .modal-group, .modal-actions { flex-direction: column; align-items: stretch; }
-    .modal-group input[type="number"], .modal-group select, .modal-actions button { max-width: 100%; width: 100%; }
+    .modal-group input[type="number"], .modal-group select, .modal-group input[type="text"], .modal-group input[type="password"], .modal-actions button { max-width: 100%; width: 100%; }
   }
 </style>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, increment, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, increment, getDoc, setDoc, deleteField } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyD2yryd1DLpxEzoScuCR9bIcZKdGDIv3xY",
@@ -170,11 +164,9 @@
       isAdmin = false;
       loggedInAdmin = null;
       document.getElementById('btnAuthToggle').textContent = "Admin Login";
-      document.getElementById('btnChangePassToggle').classList.add('hidden');
-      document.getElementById('adminTabsGroup').classList.remove('active');
+      document.getElementById('btnAdminCredsToggle').classList.add('hidden');
       document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
-      document.getElementById('warSectionPanel').classList.add('hidden');
-      document.getElementById('analyticsSectionPanel').classList.remove('hidden');
+      document.getElementById('mainWrapper').classList.remove('admin-active');
       renderTable();
     } else {
       document.getElementById('loginModal').classList.add('active');
@@ -186,24 +178,19 @@
   });
 
   document.getElementById('btnLoginConfirm').addEventListener('click', async () => {
-    const u = document.getElementById('logUser').value;
+    const u = document.getElementById('logUser').value.trim();
     const p = document.getElementById('logPass').value;
     
-    if (u !== 'admin1' && u !== 'admin2') {
-      showCustomDialog('Login Failed', 'Username must be admin1 or admin2');
-      return;
-    }
-
     let authSnap = await getDoc(authRef);
     let credentials = {};
     if (!authSnap.exists()) {
-      credentials = { admin1: 'admin', admin2: 'admin' };
+      credentials = { admin: 'admin' };
       await setDoc(authRef, credentials);
     } else {
       credentials = authSnap.data();
     }
 
-    if (credentials[u] === p) {
+    if (credentials[u] && credentials[u] === p) {
       isAdmin = true;
       loggedInAdmin = u;
       document.getElementById('loginModal').classList.remove('active');
@@ -211,54 +198,48 @@
       document.getElementById('logPass').value = '';
       
       document.getElementById('btnAuthToggle').textContent = `Logout (${u})`;
-      document.getElementById('btnChangePassToggle').classList.remove('hidden');
-      document.getElementById('adminTabsGroup').classList.add('active');
-      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+      document.getElementById('btnAdminCredsToggle').classList.remove('hidden');
       
-      switchTab('war');
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+      document.getElementById('mainWrapper').classList.add('admin-active');
+      
       renderTable();
     } else {
       showCustomDialog('Login Failed', 'Invalid admin credentials.');
     }
   });
 
-  document.querySelectorAll('.admin-tabs .tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      switchTab(e.target.dataset.tab);
-    });
-  });
-
-  const switchTab = (tabName) => {
-    document.querySelectorAll('.admin-tabs .tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.admin-tabs .tab[data-tab="${tabName}"]`).classList.add('active');
-    
-    if (tabName === 'war') {
-      document.getElementById('analyticsSectionPanel').classList.add('hidden');
-      document.getElementById('warSectionPanel').classList.remove('hidden');
-    } else {
-      document.getElementById('warSectionPanel').classList.add('hidden');
-      document.getElementById('analyticsSectionPanel').classList.remove('hidden');
-    }
-  };
-
-  document.getElementById('btnChangePassToggle').addEventListener('click', () => {
+  document.getElementById('btnAdminCredsToggle').addEventListener('click', () => {
+    document.getElementById('newUsernameInput').value = loggedInAdmin;
     document.getElementById('newPassInput').value = '';
-    document.getElementById('passModal').classList.add('active');
+    document.getElementById('adminCredsModal').classList.add('active');
   });
 
-  document.getElementById('btnCancelPass').addEventListener('click', () => {
-    document.getElementById('passModal').classList.remove('active');
+  document.getElementById('btnCancelAdminCreds').addEventListener('click', () => {
+    document.getElementById('adminCredsModal').classList.remove('active');
   });
 
-  document.getElementById('btnSavePass').addEventListener('click', async () => {
-    const newPass = document.getElementById('newPassInput').value;
-    if (!newPass || newPass.trim() === '') {
-      showCustomDialog('Error', 'Password cannot be empty.');
+  document.getElementById('btnSaveAdminCreds').addEventListener('click', async () => {
+    const newU = document.getElementById('newUsernameInput').value.trim();
+    const newP = document.getElementById('newPassInput').value;
+    
+    if (!newU || !newP || newP.trim() === '') {
+      showCustomDialog('Error', 'Both username and password cannot be empty.');
       return;
     }
-    await updateDoc(authRef, { [loggedInAdmin]: newPass });
-    showCustomDialog('Success', 'Password updated successfully!');
-    document.getElementById('passModal').classList.remove('active');
+    
+    let updates = {};
+    if (newU !== loggedInAdmin) {
+        updates[loggedInAdmin] = deleteField();
+    }
+    updates[newU] = newP;
+    
+    await updateDoc(authRef, updates);
+    
+    loggedInAdmin = newU;
+    document.getElementById('btnAuthToggle').textContent = `Logout (${newU})`;
+    showCustomDialog('Success', 'Admin credentials updated successfully!');
+    document.getElementById('adminCredsModal').classList.remove('active');
   });
 
   onSnapshot(warsRef, (snapshot) => {
@@ -278,7 +259,9 @@
     
     warsData.sort((a, b) => new Date(b.date) - new Date(a.date));
     renderCalendar();
-    if (activeMemberId) populateAnalytics(activeMemberId);
+    if (activeMemberId && document.getElementById('analyticsModal').classList.contains('active')) {
+        populateAnalytics(activeMemberId);
+    }
   });
 
   onSnapshot(membersRef, (snapshot) => {
@@ -303,7 +286,9 @@
       });
     });
     renderTable();
-    if (activeMemberId) populateAnalytics(activeMemberId);
+    if (activeMemberId && document.getElementById('analyticsModal').classList.contains('active')) {
+        populateAnalytics(activeMemberId);
+    }
   });
 
   const renderTable = () => {
@@ -323,8 +308,8 @@
       tr.onclick = () => {
         document.querySelectorAll('.interactive-row').forEach(row => row.classList.remove('selected'));
         tr.classList.add('selected');
-        if (isAdmin) switchTab('analytics');
         populateAnalytics(m.id);
+        document.getElementById('analyticsModal').classList.add('active');
       };
       
       tr.innerHTML = `<td class="rank-col">#${rank++}</td><td>${sanitize(m.name)}</td><td>${m.points.toLocaleString()}</td>`;
@@ -338,9 +323,6 @@
     activeMemberId = id;
     const member = membersData.find(m => m.id === id);
     if (!member) return;
-
-    document.getElementById('anPlaceholder').classList.add('hidden');
-    document.getElementById('anContent').classList.remove('hidden');
 
     document.getElementById('anTitle').textContent = `${sanitize(member.name)}'s Analytics`;
     document.getElementById('stToday').textContent = member.todayPoints.toLocaleString();
@@ -751,8 +733,7 @@
     showCustomDialog('Drop Member', 'Are you sure you want to completely delete this member from the database?', async () => {
       await deleteDoc(doc(db_for_orders, "members", activeMemberId));
       activeMemberId = null;
-      document.getElementById('anContent').classList.add('hidden');
-      document.getElementById('anPlaceholder').classList.remove('hidden');
+      document.getElementById('analyticsModal').classList.remove('active');
       showCustomDialog('Deleted', 'Member dropped completely.');
     });
   });
@@ -762,12 +743,12 @@
 </script>
 </head>
 <body>
-  <div class="main-wrapper">
+  <div class="main-wrapper" id="mainWrapper">
     <div class="panel">
       <h1 style="margin-bottom: 25px;">
         Live Leaderboard 
         <div style="display: flex; gap: 10px;">
-          <button id="btnChangePassToggle" class="secondary-btn hidden" style="font-size: 0.85rem; padding: 6px 12px;">Change Pass</button>
+          <button id="btnAdminCredsToggle" class="secondary-btn hidden" style="font-size: 0.85rem; padding: 6px 12px;">Admin Credentials</button>
           <button id="btnAuthToggle" class="secondary-btn" style="font-size: 0.85rem; padding: 6px 12px;">Admin Login</button>
         </div>
       </h1>
@@ -788,67 +769,60 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="admin-tabs" id="adminTabsGroup">
-        <button class="tab active" data-tab="analytics">Analytics</button>
-        <button class="tab" data-tab="war">War Hub</button>
+    <div class="panel admin-only" id="warHubPanel" style="display: none;">
+      <h2 style="margin-top:0;">War Hub & Registration</h2>
+      <form id="warForm" class="war-form">
+        <input type="text" id="wEnemy" placeholder="Enemy Gang Name" required autocomplete="off">
+        <input type="date" id="wDate" required>
+        <input type="text" id="wWinner" class="full-width" placeholder="Who won the match?" autocomplete="off">
+        <input type="text" id="wRemarks" class="full-width" placeholder="Remarks (Optional)" autocomplete="off">
+        <div id="modesContainer" class="full-width" style="display: flex; flex-direction: column; margin-bottom: 5px;"></div>
+        <button type="button" id="btnAddMode" class="secondary-btn full-width" style="margin-bottom: 10px;">+ Add Battle Mode</button>
+        <button type="submit" class="primary-btn full-width">Save War Record</button>
+      </form>
+
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <button type="button" id="prevMonth" class="secondary-btn">&lt;</button>
+          <h3 id="calMonthYear"></h3>
+          <button type="button" id="nextMonth" class="secondary-btn">&gt;</button>
+        </div>
+        <div class="calendar-days">
+          <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="analyticsModal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #38bdf8;" id="anTitle">Analytics</h2>
+        <button id="btnAdminEditPoints" class="primary-btn admin-only" style="font-size: 0.85rem; padding: 8px 12px;">Manage Points</button>
+      </div>
+      
+      <div class="analytics-stats">
+        <div class="stat-box"><span>Today</span><strong id="stToday">0</strong></div>
+        <div class="stat-box"><span>This Week</span><strong id="stWeek">0</strong></div>
+        <div class="stat-box"><span>This Month</span><strong id="stMonth">0</strong></div>
+        <div class="stat-box"><span>Total Points</span><strong id="stTotal">0</strong></div>
+      </div>
+      
+      <h3 style="color:#f8fafc; margin-top:0;">Wars Attended</h3>
+      <div class="wars-list" id="anWarsList"></div>
+      
+      <div class="admin-only" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px; border-top: 1px solid #334155; padding-top: 15px;">
+        <h3 style="color:#f8fafc; margin: 0;">Manage Member Details</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="editNameInput" style="flex:1; min-width: 150px;">
+          <button id="btnUpdateUser" class="secondary-btn">Rename</button>
+          <button id="btnDeleteUser" class="danger-btn">Drop Member</button>
+        </div>
       </div>
 
-      <div id="analyticsSectionPanel">
-        <div id="anPlaceholder" class="placeholder-msg">
-          Click a member row on the leaderboard to view their individual analytics and history.
-        </div>
-        
-        <div id="anContent" class="hidden">
-          <h1 style="margin-top:0;">
-            <span id="anTitle">Analytics</span>
-            <button id="btnAdminEditPoints" class="primary-btn admin-only" style="font-size: 0.85rem; padding: 8px 12px;">Manage Points</button>
-          </h1>
-          
-          <div class="analytics-stats">
-            <div class="stat-box"><span>Today</span><strong id="stToday">0</strong></div>
-            <div class="stat-box"><span>This Week</span><strong id="stWeek">0</strong></div>
-            <div class="stat-box"><span>This Month</span><strong id="stMonth">0</strong></div>
-            <div class="stat-box"><span>Total Points</span><strong id="stTotal">0</strong></div>
-          </div>
-          
-          <h3 style="color:#f8fafc; margin-top:0;">Wars Attended</h3>
-          <div class="wars-list" id="anWarsList"></div>
-          
-          <div class="admin-only" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px; border-top: 1px solid #334155; padding-top: 15px;">
-            <h3 style="color:#f8fafc; margin: 0;">Manage Member Details</h3>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <input type="text" id="editNameInput" style="flex:1; min-width: 150px;">
-              <button id="btnUpdateUser" class="secondary-btn">Rename</button>
-              <button id="btnDeleteUser" class="danger-btn">Drop Member</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="warSectionPanel" class="hidden">
-        <h2 style="margin-top:0;">War Registration</h2>
-        <form id="warForm" class="war-form">
-          <input type="text" id="wEnemy" placeholder="Enemy Gang Name" required autocomplete="off">
-          <input type="date" id="wDate" required>
-          <input type="text" id="wWinner" class="full-width" placeholder="Who won the match?" autocomplete="off">
-          <input type="text" id="wRemarks" class="full-width" placeholder="Remarks (Optional)" autocomplete="off">
-          <div id="modesContainer" class="full-width" style="display: flex; flex-direction: column; margin-bottom: 5px;"></div>
-          <button type="button" id="btnAddMode" class="secondary-btn full-width" style="margin-bottom: 10px;">+ Add Battle Mode</button>
-          <button type="submit" class="primary-btn full-width">Save War Record</button>
-        </form>
-
-        <div class="calendar-container">
-          <div class="calendar-header">
-            <button type="button" id="prevMonth" class="secondary-btn">&lt;</button>
-            <h3 id="calMonthYear"></h3>
-            <button type="button" id="nextMonth" class="secondary-btn">&gt;</button>
-          </div>
-          <div class="calendar-days">
-            <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
-          </div>
-          <div id="calendarGrid" class="calendar-grid"></div>
-        </div>
+      <div class="modal-actions" style="justify-content: flex-end; margin-top: 20px;">
+        <button class="secondary-btn" onclick="document.getElementById('analyticsModal').classList.remove('active')">Close</button>
       </div>
     </div>
   </div>
@@ -864,6 +838,24 @@
           <button id="btnCancelLogin" class="secondary-btn">Cancel</button>
           <button id="btnLoginConfirm" class="primary-btn">Login</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="adminCredsModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <h2>Admin Credentials</h2>
+      <div class="modal-group" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <label for="newUsernameInput" style="margin-bottom: 5px;">New Username</label>
+        <input type="text" id="newUsernameInput" style="max-width: 100%;">
+      </div>
+      <div class="modal-group" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <label for="newPassInput" style="margin-bottom: 5px;">New Password</label>
+        <input type="password" id="newPassInput" style="max-width: 100%;">
+      </div>
+      <div class="modal-actions" style="justify-content: flex-end; gap: 10px;">
+        <button type="button" class="secondary-btn" id="btnCancelAdminCreds">Cancel</button>
+        <button type="button" class="primary-btn" id="btnSaveAdminCreds">Update Credentials</button>
       </div>
     </div>
   </div>
@@ -949,20 +941,6 @@
           <button class="secondary-btn" id="btnCancelPoint">Cancel</button>
           <button class="primary-btn" id="btnSavePoint">Save and Update</button>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="passModal">
-    <div class="modal-content" style="max-width: 400px;">
-      <h2>Change Password</h2>
-      <div class="modal-group" style="flex-direction: column; align-items: stretch; gap: 8px;">
-        <label for="newPassInput" style="margin-bottom: 5px;">New Password</label>
-        <input type="password" id="newPassInput" style="max-width: 100%;">
-      </div>
-      <div class="modal-actions" style="justify-content: flex-end; gap: 10px;">
-        <button type="button" class="secondary-btn" id="btnCancelPass">Cancel</button>
-        <button type="button" class="primary-btn" id="btnSavePass">Update Password</button>
       </div>
     </div>
   </div>
